@@ -4,13 +4,13 @@ copyright: Copyright © Drawnix Team and contributors
 
 directories:
   output: release
-  buildResources: icons
+  buildResources: assets
 
 files:
   - main.cjs
   - package.json
   - dist/**/*
-  - icons/icon.png
+  - assets/icon.png
 
 extraMetadata:
   main: main.cjs
@@ -20,7 +20,7 @@ linux:
     - AppImage
     - deb
   category: Graphics
-  icon: icons/icon.png
+  icon: icon.png
   synopsis: 开源白板、思维导图与流程图工具
   description: >-
     Drawnix 是一体化开源白板工具，集成思维导图、流程图、自由画，支持无限画布、
@@ -35,10 +35,10 @@ linux:
       StartupWMClass: Drawnix
 
 appImage:
-  artifactName: ${productName}-${version}-${arch}.AppImage
+  artifactName: Drawnix-${version}-x86_64.AppImage
 
 deb:
-  artifactName: ${productName}-${version}-${arch}.deb
+  artifactName: Drawnix-${version}-amd64.deb
   priority: optional
   compression: xz
   depends:

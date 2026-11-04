@@ -122,7 +122,7 @@ function createWindow() {
     title: 'Drawnix',
     backgroundColor: '#ffffff',
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'icons', 'icon.png'),
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     show: false,
     webPreferences: {
       contextIsolation: true,

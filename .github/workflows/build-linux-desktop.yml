@@ -48,8 +48,9 @@ jobs:
 
       - name: Build AppImage + deb
         working-directory: desktop
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # No GH_TOKEN here on purpose: with a token set, electron-builder tries to
+        # resolve a publish channel during cleanup and crashes when it cannot.
+        # The Release step below uploads the artifacts with gh instead.
         run: npx electron-builder --linux AppImage deb --publish never
 
       - name: Verify artifacts

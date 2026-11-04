@@ -1,7 +1,7 @@
 {
   "name": "drawnix-desktop",
   "productName": "Drawnix",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Drawnix 开源白板（思维导图 / 流程图 / 自由画）离线桌面版",
   "license": "MIT",
   "author": {

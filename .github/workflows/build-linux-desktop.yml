@@ -1,0 +1,137 @@
+name: build-linux-desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 版本号（用于产物命名，例如 0.4.1）
+        required: false
+        default: '0.4.1'
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    # glibc 2.35 baseline: runs on Deepin 25 (2.38) and Debian 12.
+    # Do not switch to ubuntu-latest / 24.04 (glibc 2.39 breaks older targets).
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install workspace deps
+        run: npm ci
+
+      - name: Build web app
+        run: npx nx build web
+
+      - name: Verify web build output
+        run: |
+          set -euo pipefail
+          test -f dist/apps/web/index.html
+          test -n "$(find dist/apps/web -name '*.js' -print -quit)"
+          du -sh dist/apps/web
+
+      - name: Assemble desktop package
+        run: |
+          set -euo pipefail
+          rm -rf desktop/dist
+          cp -r dist/apps/web desktop/dist
+          ls desktop/dist | head -20
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Build AppImage + deb
+        working-directory: desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # electron 二进制从国内镜像拉，避免 GitHub 大文件超时
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+        run: npx electron-builder --linux AppImage deb --publish never
+
+      - name: Verify artifacts
+        run: |
+          set -euo pipefail
+          ls -la desktop/release
+          APPIMAGE=$(find desktop/release -maxdepth 1 -name '*.AppImage' -print -quit)
+          DEB=$(find desktop/release -maxdepth 1 -name '*.deb' -print -quit)
+          test -n "$APPIMAGE"
+          test -n "$DEB"
+          echo "APPIMAGE=$APPIMAGE"
+          echo "DEB=$DEB"
+          chmod +x "$APPIMAGE"
+          # 解开 deb，确认 web 资源和 electron 主程序都在
+          mkdir -p /tmp/debcheck
+          dpkg-deb -x "$DEB" /tmp/debcheck
+          find /tmp/debcheck -name 'app.asar' -print -quit
+          find /tmp/debcheck -name 'drawnix' -type f -print -quit
+          ls -la /tmp/debcheck/opt/*/ | head
+          sha256sum "$APPIMAGE" "$DEB" | tee /tmp/checksums.txt
+
+      - name: Prepare release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          cat > /tmp/notes.md <<EOF
+          Drawnix ${TAG} Linux 桌面版（非官方封装）
+
+          ## 这是什么
+          上游 plait-board/drawnix 是一个纯 Web 的开源白板（思维导图 / 流程图 / 自由画）。
+          此版本用 Electron 包成离线桌面应用：不联网也能用，数据存在本地 IndexedDB。
+
+          ## 改了什么（相对上游 ${TAG}）
+          - 新增 \`desktop/\`：Electron 主进程 + electron-builder 配置（AppImage / deb 双产物）
+          - 前端资源通过自定义协议 \`app://drawnix/\` 提供，保证 IndexedDB 自动保存跨启动有效
+          - 关闭内置菜单、外链一律交给系统浏览器、单实例运行
+          - 上游前端代码零改动
+
+          ## 数据与文件
+          - 自动保存：本地 IndexedDB（应用内数据目录 \`~/.config/Drawnix\`）
+          - 文件导入 / 导出：走系统文件对话框（.drawnix / .json / PNG / SVG 等）
+
+          ## 已知限制
+          - 仅 linux x64，AppImage 需要 \`libfuse2\`
+          - 上游没有桌面端，本包是社区封装，问题请提到本仓库
+          - 侧边栏里的 mermaid / markdown 转换走打包进包的本地模块，无需联网
+
+          ## 校验
+          \`\`\`
+          $(cat /tmp/checksums.txt)
+          \`\`\`
+          EOF
+          cat /tmp/notes.md
+
+      - name: Upload artifacts (workflow_dispatch)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: drawnix-linux-x64
+          path: |
+            desktop/release/*.AppImage
+            desktop/release/*.deb
+
+      - name: Publish GitHub Release (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          gh release create "$TAG" \
+            desktop/release/*.AppImage \
+            desktop/release/*.deb \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Drawnix ${TAG} Linux 桌面版" \
+            --notes-file /tmp/notes.md

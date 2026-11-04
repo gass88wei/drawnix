@@ -1,0 +1,21 @@
+{
+  "name": "drawnix-desktop",
+  "productName": "Drawnix",
+  "version": "0.4.1",
+  "description": "Drawnix 开源白板（思维导图 / 流程图 / 自由画）离线桌面版",
+  "license": "MIT",
+  "author": {
+    "name": "gass88wei",
+    "email": "gass88wei@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/plait-board/drawnix",
+  "main": "main.cjs",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "45.2.2",
+    "electron-builder": "26.18.0"
+  }
+}

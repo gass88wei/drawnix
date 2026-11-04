@@ -1,0 +1,57 @@
+appId: com.drawnix.desktop
+productName: Drawnix
+copyright: Copyright © Drawnix Team and contributors
+
+directories:
+  output: release
+  buildResources: icons
+
+files:
+  - main.cjs
+  - package.json
+  - dist/**/*
+  - icons/icon.png
+
+extraMetadata:
+  main: main.cjs
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Graphics
+  icon: icons/icon.png
+  synopsis: 开源白板、思维导图与流程图工具
+  description: >-
+    Drawnix 是一体化开源白板工具，集成思维导图、流程图、自由画，支持无限画布、
+    自动保存与本地文件导入导出。本包由上游 Web 版本封装为离线桌面应用。
+  executableName: drawnix
+  desktop:
+    entry:
+      Name: Drawnix
+      Comment: 开源白板 / 思维导图 / 流程图
+      Categories: Graphics;Office;Development;
+      Keywords: whiteboard;mindmap;flowchart;drawing;diagram;
+      StartupWMClass: Drawnix
+
+appImage:
+  artifactName: ${productName}-${version}-${arch}.AppImage
+
+deb:
+  artifactName: ${productName}-${version}-${arch}.deb
+  priority: optional
+  compression: xz
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+    - libsecret-1-0
+    - libasound2
+    - libdrm2
+    - libgbm1
+    - libxkbcommon0
